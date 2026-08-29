@@ -4,7 +4,7 @@ packages:
   - packages/*
 
 # Explicitly reviewed native/build-script dependencies required by Vite/Workers.
-# Keep this allow-list narrow; do not globally disable pnpm build-script security.
-onlyBuiltDependencies:
-  - esbuild
-  - workerd
+# pnpm 11 records build approvals in allowBuilds. Keep this map narrow.
+allowBuilds:
+  esbuild: true
+  workerd: true
