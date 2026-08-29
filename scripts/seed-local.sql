@@ -1,8 +1,8 @@
--- Deterministic development-only seed for the Phase 02 meal-operations checkpoint.
+-- Deterministic development-only seed for the Phase 02 calendar/holiday checkpoint.
 -- Never use these identities or values in production.
 
 INSERT INTO app_schema_metadata (key, value, updated_at)
-VALUES ('seed_profile', 'phase-02-meal-operations-development-only', CURRENT_TIMESTAMP)
+VALUES ('seed_profile', 'phase-02-calendar-development-only', CURRENT_TIMESTAMP)
 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at;
 
 INSERT INTO institutions (id, name, currency, timezone)
@@ -64,6 +64,14 @@ INSERT INTO leave_applications (
   ('leave-demo-ananya-001', 'inst-boardops-demo', 'user-002', '2026-08-31', '2026-09-01', 'Family visit outside campus', 'ALL', '[]', 'PENDING')
 ON CONFLICT(id) DO NOTHING;
 
+INSERT INTO calendar_events (
+  id, institution_id, name, description, type, start_date, end_date, meals_disabled, status, created_by, updated_by
+) VALUES
+  ('calendar-special-001', 'inst-boardops-demo', 'Festival Dinner', 'Special dinner service and campus gathering.', 'SPECIAL_MEAL', '2026-09-01', '2026-09-01', 0, 'ACTIVE', 'user-admin-demo', 'user-admin-demo'),
+  ('calendar-closure-001', 'inst-boardops-demo', 'Founders Day', 'Institution holiday. Regular meal service is closed for the day.', 'HOLIDAY', '2026-09-02', '2026-09-02', 1, 'ACTIVE', 'user-admin-demo', 'user-admin-demo'),
+  ('calendar-maintenance-001', 'inst-boardops-demo', 'Kitchen Deep Clean', 'Kitchen maintenance notice; service continues on the normal schedule.', 'MAINTENANCE', '2026-09-04', '2026-09-04', 0, 'ACTIVE', 'user-admin-demo', 'user-admin-demo')
+ON CONFLICT(id) DO UPDATE SET name = excluded.name, description = excluded.description, type = excluded.type, start_date = excluded.start_date, end_date = excluded.end_date, meals_disabled = excluded.meals_disabled, status = excluded.status, updated_by = excluded.updated_by, updated_at = CURRENT_TIMESTAMP;
+
 INSERT INTO audit_events (id, actor_user_id, action, entity_type, entity_id, detail, created_at) VALUES
   ('audit-seed-001', 'user-admin-demo', 'DOMAIN_SEEDED', 'System', 'phase-02', 'Phase 02 local demo data created', '2026-08-29T09:00:00Z'),
   ('audit-seed-002', 'user-admin-demo', 'RESIDENT_REVIEWED', 'User', 'user-004', 'Resident profile verified for local demo', '2026-08-29T09:30:00Z'),
@@ -71,5 +79,6 @@ INSERT INTO audit_events (id, actor_user_id, action, entity_type, entity_id, det
   ('audit-seed-004', 'user-admin-demo', 'RESIDENT_SUSPEND', 'User', 'user-006', 'Seeded suspended resident for lifecycle testing', '2026-08-29T10:05:00Z'),
   ('audit-seed-005', 'user-admin-demo', 'RESIDENT_ARCHIVE', 'User', 'user-007', 'Seeded archived resident for restore testing', '2026-08-29T10:10:00Z'),
   ('audit-seed-006', 'user-admin-demo', 'MEAL_CONFIG_SEEDED', 'MealConfiguration', 'meal-breakfast', 'Breakfast, lunch and dinner configuration seeded for the meals checkpoint', '2026-08-29T10:15:00Z'),
-  ('audit-seed-007', 'user-admin-demo', 'MEAL_OPERATIONS_SEEDED', 'System', 'phase-02-meal-operations', 'Presets and one pending leave application seeded for operational testing', '2026-08-29T10:20:00Z')
+  ('audit-seed-007', 'user-admin-demo', 'MEAL_OPERATIONS_SEEDED', 'System', 'phase-02-meal-operations', 'Presets and one pending leave application seeded for operational testing', '2026-08-29T10:20:00Z'),
+  ('audit-seed-008', 'user-admin-demo', 'CALENDAR_SEEDED', 'System', 'phase-02-calendar', 'Calendar demo events seeded, including one meal-service closure', '2026-08-29T10:25:00Z')
 ON CONFLICT(id) DO NOTHING;
