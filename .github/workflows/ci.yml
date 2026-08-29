@@ -180,6 +180,81 @@ jobs:
             -d "$VOID_BODY" "http://127.0.0.1:8787/api/v1/payments/$SUBMISSION_ID/review" > /tmp/void-retry.json
           grep -q '"idempotent":true' /tmp/void-retry.json
 
+      - name: Purchase reference workflow regression
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/products?includeArchived=true' > /tmp/products.json
+          grep -q '"name":"Rice"' /tmp/products.json
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            http://127.0.0.1:8787/api/v1/units > /tmp/units.json
+          grep -q '"name":"kg"' /tmp/units.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies -H 'Content-Type: application/json' \
+            -d '{"name":"CI Tomato","category":"VEGETABLE","defaultUnitId":"unit-kg"}' \
+            http://127.0.0.1:8787/api/v1/products > /tmp/product-create.json
+          PRODUCT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/product-create.json','utf8'));process.stdout.write(x.data.id)")
+          test -n "$PRODUCT_ID"
+
+          PURCHASE_BODY='{"vendor":"CI Market","purchaseDate":"2026-08-29","items":[{"productId":"product-rice","productName":"Rice","category":"GROCERY","quantityMilli":2500,"unit":"kg","rateMinor":6000},{"productId":null,"productName":"Fish","category":"PROTEIN","quantityMilli":1250,"unit":"kg","rateMinor":24000}],"notes":"CI multi-item shopping","idempotencyKey":"ci-purchase-create-0001"}'
+          curl --fail --silent --show-error -b /tmp/admin.cookies -H 'Content-Type: application/json' \
+            -d "$PURCHASE_BODY" http://127.0.0.1:8787/api/v1/purchases > /tmp/purchase-create.json
+          grep -q '"status":"APPROVED"' /tmp/purchase-create.json
+          grep -q '"totalAmountMinor":45000' /tmp/purchase-create.json
+          grep -q '"productName":"Rice"' /tmp/purchase-create.json
+          grep -q '"productName":"Fish"' /tmp/purchase-create.json
+          PURCHASE_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/purchase-create.json','utf8'));process.stdout.write(x.data.purchase.id)")
+          test -n "$PURCHASE_ID"
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies -H 'Content-Type: application/json' \
+            -d "$PURCHASE_BODY" http://127.0.0.1:8787/api/v1/purchases > /tmp/purchase-retry.json
+          grep -q '"idempotent":true' /tmp/purchase-retry.json
+          RETRY_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/purchase-retry.json','utf8'));process.stdout.write(x.data.purchase.id)")
+          test "$PURCHASE_ID" = "$RETRY_ID"
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/purchases?month=8&year=2026' > /tmp/purchases-active.json
+          grep -q "$PURCHASE_ID" /tmp/purchases-active.json
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/purchases/stats?month=8&year=2026' > /tmp/purchase-stats.json
+          grep -q '"monthTotalMinor":45000' /tmp/purchase-stats.json
+          grep -q '"monthCount":1' /tmp/purchase-stats.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies -X PATCH -H 'Content-Type: application/json' \
+            -d '{"action":"SOFT_DELETE","reason":"CI duplicate purchase correction","idempotencyKey":"ci-purchase-delete-0001"}' \
+            "http://127.0.0.1:8787/api/v1/purchases/$PURCHASE_ID" > /tmp/purchase-delete.json
+          grep -q '"status":"DELETED"' /tmp/purchase-delete.json
+          grep -q 'CI duplicate purchase correction' /tmp/purchase-delete.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/purchases?month=8&year=2026' > /tmp/purchases-after-delete.json
+          if grep -q "$PURCHASE_ID" /tmp/purchases-after-delete.json; then
+            echo 'Removed purchase remained in the active list'
+            exit 1
+          fi
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/purchases?month=8&year=2026&includeDeleted=true' > /tmp/purchases-with-deleted.json
+          grep -q "$PURCHASE_ID" /tmp/purchases-with-deleted.json
+          grep -q '"status":"DELETED"' /tmp/purchases-with-deleted.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/purchases/stats?month=8&year=2026' > /tmp/purchase-stats-deleted.json
+          grep -q '"monthTotalMinor":0' /tmp/purchase-stats-deleted.json
+          grep -q '"monthCount":0' /tmp/purchase-stats-deleted.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies -X PATCH -H 'Content-Type: application/json' \
+            -d '{"action":"RESTORE","idempotencyKey":"ci-purchase-restore-0001"}' \
+            "http://127.0.0.1:8787/api/v1/purchases/$PURCHASE_ID" > /tmp/purchase-restore.json
+          grep -q '"status":"APPROVED"' /tmp/purchase-restore.json
+
+          curl --fail --silent --show-error -b /tmp/admin.cookies -X DELETE -H 'Content-Type: application/json' -d '{}' \
+            "http://127.0.0.1:8787/api/v1/products/$PRODUCT_ID" > /tmp/product-archive.json
+          grep -q '"archived":true' /tmp/product-archive.json
+          curl --fail --silent --show-error -b /tmp/admin.cookies -X PATCH -H 'Content-Type: application/json' \
+            -d '{"isActive":true}' "http://127.0.0.1:8787/api/v1/products/$PRODUCT_ID" > /tmp/product-restore.json
+          grep -q '"isActive":true' /tmp/product-restore.json
+
       - name: Communications regression
         run: |
           set -euo pipefail
