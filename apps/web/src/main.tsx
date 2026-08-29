@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "sonner";
 import { App } from "./app/App";
 import "./styles/global.css";
+import "./styles/phase02-identity.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {
