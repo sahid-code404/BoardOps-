@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-29 — Phase 02 resident lifecycle checkpoint
+
+- Added the first explicit registration-review model with review cycles and states.
+- Added append-only resident status events and a tested lifecycle state machine.
+- Added resident 360 profile/review/history API and responsive UI drawer.
+- Added atomic approve/request-changes/reject/suspend/reactivate/archive/restore actions with audit history.
+- Added safe resident identity editing with uniqueness validation.
+- Added deterministic pending, suspended, and archived local test cases.
+- CI run `33251375051` passed typecheck, tests, build, D1 migrations, Worker startup, health, and readiness probes.
+
+## 2026-08-29 — Phase 02 first real app checkpoint
+
+- Replaced the temporary foundation page with the real BoardOps React application shell.
+- Added local-only HttpOnly-cookie sign-in with hashed D1 session tokens.
+- Added D1-backed dashboard, Residents search/listing, mobile navigation, and resident-role testing.
+- Added initial core-domain migration for institutions, users, sessions, and immutable audit events.
+- CI run `33250647451` verified typecheck, tests, builds, D1 migration, Worker startup, health, and readiness.
+
 ## 2026-08-29 — Phase 01 source audit completed
 
 - Completed the recursive source API and frontend feature inventory at pinned source commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
@@ -9,7 +27,7 @@
 - Recorded filesystem upload/rate-limit/shell-backup and request-triggered-maintenance incompatibilities.
 - Finalized feature parity with no unresolved `VERIFY` rows.
 - Added ADRs for permission authorization, R2, email abstraction and durable workflows.
-- Marked Phase 01 complete. Phase 02 remains intentionally not started.
+- Marked Phase 01 complete.
 
 ## 2026-08-29 — Phase 00 verified
 
@@ -32,4 +50,4 @@
 - Added committed lockfile and frozen-install CI.
 - Began source audit while keeping the reference repository read-only.
 
-No production deployment and no Phase 02 domain implementation in this checkpoint.
+No production deployment is authorized in these checkpoints.
