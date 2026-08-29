@@ -80,7 +80,10 @@ function dateKey(date: Date) {
 }
 
 function dateFromKey(value: string) {
-  const [year, month, day] = value.split("-").map(Number);
+  const [yearText, monthText, dayText] = value.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
   return new Date(year, month - 1, day);
 }
 
