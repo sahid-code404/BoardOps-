@@ -85,11 +85,16 @@ export function PaymentsPage({ user }: { user: Viewer }) {
   const [reversingId, setReversingId] = useState<string | null>(null);
   const [reversalReason, setReversalReason] = useState("");
 
-  const summary = useQuery({
-    queryKey: ["funds-summary"],
-    queryFn: () => user.role === "ADMIN"
-      ? apiRequest<{ currency: string; balances: BalanceRow[] }>("/funds/summary")
-      : apiRequest<{ currency: string; balanceMinor: number }>("/funds/summary"),
+  const adminSummary = useQuery({
+    queryKey: ["funds-summary", "admin"],
+    queryFn: () => apiRequest<{ currency: string; balances: BalanceRow[] }>("/funds/summary"),
+    enabled: user.role === "ADMIN",
+  });
+
+  const residentSummary = useQuery({
+    queryKey: ["funds-summary", "resident"],
+    queryFn: () => apiRequest<{ currency: string; balanceMinor: number }>("/funds/summary"),
+    enabled: user.role === "USER",
   });
 
   const payments = useQuery({
@@ -139,13 +144,15 @@ export function PaymentsPage({ user }: { user: Viewer }) {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const adminBalances = user.role === "ADMIN" && summary.data && "balances" in summary.data ? summary.data.balances : [];
-  const residentBalance = user.role === "USER" && summary.data && "balanceMinor" in summary.data ? summary.data.balanceMinor : 0;
+  const adminBalances = adminSummary.data?.balances ?? [];
+  const residentBalance = residentSummary.data?.balanceMinor ?? 0;
   const totalFunds = useMemo(() => adminBalances.reduce((sum, item) => sum + item.balanceMinor, 0), [adminBalances]);
   const activePayments = (payments.data?.payments ?? []).filter((payment) => !payment.reversalId).length;
   const reversedPayments = (payments.data?.payments ?? []).filter((payment) => Boolean(payment.reversalId)).length;
-  const error = summary.error || payments.error || (user.role === "USER" ? ledger.error : null);
-  const loading = summary.isLoading || payments.isLoading || (user.role === "USER" && ledger.isLoading);
+  const summaryError = user.role === "ADMIN" ? adminSummary.error : residentSummary.error;
+  const summaryLoading = user.role === "ADMIN" ? adminSummary.isLoading : residentSummary.isLoading;
+  const error = summaryError || payments.error || (user.role === "USER" ? ledger.error : null);
+  const loading = summaryLoading || payments.isLoading || (user.role === "USER" && ledger.isLoading);
 
   const submitPayment = () => {
     const amountMinor = parseMajorToMinor(amount);
@@ -173,7 +180,7 @@ export function PaymentsPage({ user }: { user: Viewer }) {
       <div className="accounting-safety"><ShieldCheck size={18} /><div><span>Accounting mode</span><strong>Integer money · append-only ledger</strong></div></div>
     </section>
 
-    {loading ? <div className="payments-skeleton-grid"><div className="skeleton kpi" /><div className="skeleton kpi" /><div className="skeleton panel-skeleton" /></div> : error ? <PaymentsError message={(error as Error).message} retry={() => { summary.refetch(); payments.refetch(); if (user.role === "USER") ledger.refetch(); }} /> : <>
+    {loading ? <div className="payments-skeleton-grid"><div className="skeleton kpi" /><div className="skeleton kpi" /><div className="skeleton panel-skeleton" /></div> : error ? <PaymentsError message={(error as Error).message} retry={() => { if (user.role === "ADMIN") adminSummary.refetch(); else residentSummary.refetch(); payments.refetch(); if (user.role === "USER") ledger.refetch(); }} /> : <>
       <section className="payment-kpis">
         <article className="glass-surface"><Wallet size={19} /><div><span>{user.role === "ADMIN" ? "Resident funds" : "Current balance"}</span><strong>{formatMoney(user.role === "ADMIN" ? totalFunds : residentBalance)}</strong><small>{user.role === "ADMIN" ? `${adminBalances.length} active residents` : "derived from immutable ledger entries"}</small></div></article>
         <article className="glass-surface"><CheckCircle2 size={19} /><div><span>Posted payments</span><strong>{activePayments}</strong><small>currently unreversed</small></div></article>
