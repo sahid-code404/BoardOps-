@@ -4,10 +4,10 @@ Production-grade rewrite of the BoardOps institutional accounting and operations
 
 ## Current status
 
-**Phase 00 — Foundation: IN PROGRESS**  
+**Phase 00 — Foundation: COMPLETE**  
 **Phase 01 — Source audit: IN PROGRESS**
 
-No production deployment is authorized. No Phase 02 domain implementation should begin until Phase 00 and Phase 01 exit criteria are met.
+No production deployment is authorized. No Phase 02 domain implementation should begin until Phase 01 exit criteria are met.
 
 ## Architecture baseline
 
@@ -40,7 +40,7 @@ Frontend: `http://localhost:5173`
 Worker health: `http://localhost:8787/health`  
 Worker readiness: `http://localhost:8787/ready`
 
-The first CI run bootstraps the repository's initial `pnpm-lock.yaml`; after that every install is frozen.
+The lockfile is committed and CI uses frozen installs. Dependency build scripts are denied unless explicitly approved in the workspace policy.
 
 ## Documentation
 
