@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 
 interface Bindings {
@@ -86,7 +86,7 @@ async function findSessionUser(db: D1Database, token: string | undefined): Promi
   return row;
 }
 
-async function currentUser(c: Parameters<typeof app.get>[1] extends never ? never : any): Promise<SessionUser | null> {
+async function currentUser(c: Context<AppEnv>): Promise<SessionUser | null> {
   return findSessionUser(c.env.DB, getCookie(c, SESSION_COOKIE));
 }
 
