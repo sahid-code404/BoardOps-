@@ -1,25 +1,28 @@
 # 06 — Business rules
 
-## Rules observed in source
+## Source rules preserved in product intent
 
-- Residents have lifecycle states and registration review cycles.
-- Meal entries are per resident, meal and service date with unique selection; entries can be ON/OFF/LOCKED and retain an original state.
-- Meal configuration controls cutoff strategy/time, visibility, default state and service windows.
-- Leave can target all or specific meals.
-- Guest meals contribute guest counts/revenue.
-- Expenses/purchases are period inputs to billing and can be locked by a billing cycle.
+- Residents have registration/review/lifecycle states and room/profile context.
+- Meal entries are unique per resident/meal/service date, carry current and original state, cutoff/editability and history; admin overrides preserve original user state.
+- Leave can target all or selected meals and is intended to apply approved absence to meal state.
+- Guest meals affect guest counts/revenue.
+- Purchases create item snapshots and are linked to expenses.
 - Formula/variable records are versioned conceptually.
-- Payments begin pending and can be approved/rejected; source selects an effective billing cycle based on whether the current cycle is closed.
-- Refunds may be partial and have child refund transactions.
-- Adjustments are intended to correct history without destructive edits.
-- Restrictions can be financial or administrative and can be auto/manual.
-- Billing cycles move through OPEN/PREPARING/SNAPSHOT_CREATED/BILLS_GENERATED/SETTLED/CLOSED/FAILED-like states.
+- Billing cycles have readiness, snapshot, bill-generation, settlement and closed states.
+- Payments can be pending/approved/rejected; source also has void/delete/restore paths that are not safe to preserve for authoritative records.
+- Refunds support partial settlement.
+- Restrictions can be financial/administrative and lifted manually or automatically.
+- Reports cover financial, meal, purchase, outstanding and resident views.
 
-## Rewrite clarifications
+## Safe target interpretation
 
-- Business state transitions must be modeled explicitly, not inferred from ad-hoc route behavior.
+- Every state transition is explicit and permission-controlled.
 - Closed periods are immutable.
-- Published bills, approved payments, posted expenses/purchases, completed refunds and ledger/audit events are immutable.
-- Corrections are reversals/adjustments plus new corrected entries.
-- Billing calculations for a frozen period may read only the immutable period snapshot.
-- Missing/invalid canonical formula blocks close; it never silently changes calculation algorithm.
+- Approved payments, published bills, posted expenses/purchases, completed refunds, ledger entries and audit events cannot be edited or hard-deleted.
+- Corrections create reversal/adjustment events plus corrected records.
+- A frozen period's calculations and historical reports read the immutable snapshot/canonical ledger only.
+- Missing/invalid canonical formulas block closing.
+- Leave approval and all derived meal mutations succeed atomically or the leave remains unapproved/failed; partial application is forbidden.
+- Maintenance and destructive cleanup never run as side effects of a GET request.
+- User removal preserves historical financial/audit references.
+- Product behavior may be improved, but economic meaning must not silently change.

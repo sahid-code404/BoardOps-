@@ -4,22 +4,28 @@ Production-grade rewrite of the BoardOps institutional accounting and operations
 
 ## Current status
 
-**Phase 00 — Foundation: COMPLETE**  
-**Phase 01 — Source audit: IN PROGRESS**
+**Phase 00 — Repository foundation: COMPLETE**  
+**Phase 01 — Source repository audit: COMPLETE**  
+**Phase 02 — Domain model + D1 database: NOT STARTED**
 
-No production deployment is authorized. No Phase 02 domain implementation should begin until Phase 01 exit criteria are met.
+The requested Phase 00/01 checkpoint is **RUNNABLE — TEST NOW**. This means the clean foundation, local Cloudflare runtime and audit are verified; it does **not** mean BoardOps business features have been rewritten yet.
+
+No production deployment is authorized. Phase 02 must begin only as a separate implementation step from the audited rules in `docs/source-audit/`.
 
 ## Architecture baseline
 
 - React + Vite + TypeScript frontend
 - Cloudflare Worker + Hono API
-- Cloudflare D1 transactional SQL database
-- Cloudflare R2 binary/object storage
-- pnpm workspace
+- Cloudflare D1 authoritative transactional SQL database
+- Cloudflare R2 operational binary/object storage
+- Cloudflare Queues for asynchronous events
+- Cloudflare Workflows for durable multi-step business processes
+- pnpm workspace with frozen lockfile
 - Vitest + Playwright testing foundation
 - Integer minor units for money
+- Immutable financial history and snapshot-only historical billing as mandatory target invariants
 
-The reference repository `sahid-code404/BoardOpsv2rewrite` is treated as **read-only** and pinned for the initial audit at commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
+The reference repository `sahid-code404/BoardOpsv2rewrite` is treated as **read-only** and the Phase 01 audit is pinned at commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
 
 ## Local development
 
@@ -44,7 +50,7 @@ The lockfile is committed and CI uses frozen installs. Dependency build scripts 
 
 ## Documentation
 
-- `docs/source-audit/` — source behavior, bugs, risks, parity and migration mapping
+- `docs/source-audit/` — source behavior, bugs, accounting conflicts, parity and migration mapping
 - `docs/architecture/` — target architecture
 - `docs/decisions/` — architecture decision records
 - `docs/implementation-history/` — permanent phase-by-phase engineering history

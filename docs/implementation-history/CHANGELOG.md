@@ -1,15 +1,26 @@
 # Changelog
 
+## 2026-08-29 — Phase 01 source audit completed
+
+- Completed the recursive source API and frontend feature inventory at pinned source commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
+- Deep-read high-risk accounting, auth/security and runtime implementations rather than inferring behavior from filenames.
+- Expanded critical correction catalog: live-data billing despite snapshots, historical bill regeneration, financial hard-delete/GET purge, manual mark-paid ledger bypass, duplicate refund accounting, partial-refund race, metadata-only adjustments, unused/racy idempotency, expense/purchase period gaps, partial leave application and live historical reports.
+- Recorded browser bearer-token and plaintext-TOTP-secret risks.
+- Recorded filesystem upload/rate-limit/shell-backup and request-triggered-maintenance incompatibilities.
+- Finalized feature parity with no unresolved `VERIFY` rows.
+- Added ADRs for permission authorization, R2, email abstraction and durable workflows.
+- Marked Phase 01 complete. Phase 02 remains intentionally not started.
+
 ## 2026-08-29 — Phase 00 verified
 
-- Phase 00 CI is green in run `33249411901`.
-- Frozen pnpm install now uses an explicit `allowBuilds` policy for reviewed `esbuild` and `workerd` install scripts.
+- Phase 00 CI green in run `33249411901`; a subsequent docs/foundation run was also green.
+- Frozen pnpm install uses an explicit build-script policy for reviewed native dependencies.
 - TypeScript typecheck, unit tests and frontend/API builds pass.
 - Local D1 migration passes in CI.
 - Local Wrangler Worker starts and both `/health` and `/ready` pass.
 - Foundation frontend build is 129.76 kB gzip JavaScript, under the initial 250 kB target.
-- CI GitHub Actions are pinned to immutable v7.0.0 commit SHAs and repository permissions are read-only.
-- Phase 00 marked complete; Phase 01 remains in progress.
+- CI GitHub Actions are SHA-pinned and repository permissions are read-only.
+- Phase 00 marked complete.
 
 ## 2026-08-29 — Rewrite initialized
 
@@ -19,7 +30,6 @@
 - Added local D1 schema metadata migration and R2 binding.
 - Added integer-minor-unit accounting primitive and invariant test.
 - Added committed lockfile and frozen-install CI.
-- Began comprehensive source audit pinned to reference commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
-- Recorded critical financial, security, performance and migration findings.
+- Began source audit while keeping the reference repository read-only.
 
-No production deployment and no Phase 02 domain implementation.
+No production deployment and no Phase 02 domain implementation in this checkpoint.

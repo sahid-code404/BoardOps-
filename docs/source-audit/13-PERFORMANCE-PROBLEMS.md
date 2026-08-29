@@ -1,25 +1,33 @@
-# 13 — Performance problems
+# 13 — Performance and resource findings
 
-## Existing positive work
+## Existing positive patterns
 
-The source lazy-loads major views with `React.lazy`, uses TanStack Query and has CSS comments/controls that deliberately limit backdrop-filter usage. These are useful patterns.
+- Major views use feature-level `React.lazy()` loading.
+- TanStack Query is already used for server-state patterns.
+- Glass CSS contains deliberate performance guidance limiting broad backdrop-filter usage.
 
-## Risks observed
+## Source cost/risk findings
 
-- Large feature components: payments, profile, billing, meals, kitchen, expenses, calendar and others contain very large single-file implementations.
-- A broad dependency set from a Next.js/shadcn-style application increases install/build/runtime surface beyond the target Worker/Vite needs.
-- Financial aggregation frequently loads row sets into JavaScript and reduces there; target SQL should aggregate where appropriate.
-- Some resident fund queries load arrays just to sum values, which can be pushed to SQL.
-- Repeated per-resident queries in bill generation create N+1 patterns.
-- Node filesystem I/O is used by rate limiting and uploads.
-- Backward-compatibility paths add duplicate auth/state work.
+- Many feature files are tens of kilobytes each, including payments, profile, billing, meals, kitchen, expenses, calendar and user administration.
+- Source framework/dependency surface is significantly broader than the target Worker/Vite stack.
+- Historical reports and fund/credit calculations frequently fetch row arrays and reduce in JavaScript rather than using targeted SQL aggregates.
+- Bill generation performs per-resident/per-entity work that creates N+1 query pressure.
+- Refund eligibility iterates residents and calls credit calculation per resident.
+- Resident export/fund reporting fans out account calculations.
+- GET bill requests run background maintenance plus overdue update work, adding writes/latency to reads.
+- GET bill/expense paths may execute purge work.
+- Local filesystem I/O is used for upload/rate-limit/backup behavior.
+- Duplicate auth token paths add state and attack surface.
 
-## Target budgets
+## Target budgets/strategy
 
 - initial JS preferably <250 KB compressed;
-- lazy feature chunk preferably <150 KB compressed;
-- no unexplained MB chunks;
-- route-level code splitting;
-- no report/export libraries on initial dashboard path;
-- measured Worker/database query counts and latency;
-- memory checks after repeated navigation.
+- individual lazy feature chunk preferably <150 KB compressed;
+- route/feature splitting and selective imports;
+- SQL aggregates/indexes for financial summaries;
+- pagination for large datasets;
+- no report/export/chart packages on initial dashboard path;
+- no request-triggered cleanup loops;
+- measure Worker duration, query count/latency, client memory, long tasks and animation frame consistency.
+
+Phase 00 foundation currently meets the initial JS budget; feature phases must keep measuring as real screens are added.

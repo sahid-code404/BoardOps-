@@ -1,19 +1,25 @@
-# 10 — UX problems
+# 10 — UX problems and redesign opportunities
 
-## Confirmed structural issues
+## Structural UX problems
 
-1. Primary navigation state is stored as a Zustand `view` key rather than URL routes. Deep linking, browser history semantics and shareability are weaker than necessary.
-2. Frontend access checks are based on an `isAdmin` boolean and a hardcoded admin-only view list. This cannot represent fine-grained permissions.
-3. Several feature components are very large (tens of kilobytes of source in single files), which increases cognitive load and makes state/error handling harder to reason about.
-4. Financial mutation semantics are not visible enough in the route model: edit/void/delete paths exist where the product should instead guide users through correction/reversal history.
-5. The source contains both old/new patterns and backward-compatibility behavior, increasing surprise and making the product harder to explain.
+1. Primary navigation uses a Zustand `view` key instead of URL routes, weakening deep links/history/shareability.
+2. Frontend authorization is represented largely by `isAdmin` plus hard-coded admin-only destinations rather than capabilities.
+3. Several feature components are very large, making loading/error/action states difficult to isolate and maintain.
+4. Financial UI exposes edit/void/delete/restore patterns for records that should communicate correction/reversal history instead.
+5. There are duplicate financial concepts: refunds exist both as Refund/RefundTransaction and as REFUNDED Payment rows, making the mental model ambiguous.
+6. Manual bill mark-paid looks like an ordinary payment but follows a different backend accounting path.
+7. Cleanup and archival semantics are hidden behind ordinary list requests; users cannot reason about when financial records become permanent.
+8. Historical reports appear authoritative while reading mutable live data, so the UI cannot explain provenance/reproducibility.
+9. 2FA UI/backend exists while the feature flag is off; target should not expose a half-working/security-incomplete feature.
 
-## Rewrite opportunities
+## Rewrite direction
 
-- URL-addressable feature routes and nested dialogs where appropriate.
-- Permission-driven navigation rather than role-name checks.
-- Clear draft/post/approve/reverse states for financial documents.
-- Human-readable immutable history on every financial detail view.
-- Mobile-first forms with sticky primary actions and no hidden destructive semantics.
-- Explicit loading/empty/error states; never synthetic financial numbers.
-- Global search/command palette only after routes/permissions are canonical.
+- URL-addressable route hierarchy and back-button-safe dialogs/sheets.
+- Permission-driven navigation and action visibility.
+- Clear draft -> posted/approved -> reversed/corrected lifecycle labels.
+- One payment flow regardless of cash/admin/user origin.
+- One refund workflow with visible transaction history.
+- Human-readable immutable ledger/audit timeline on financial detail views.
+- Snapshot/version provenance shown on historical bills/reports.
+- Mobile-first forms, sticky actions, safe areas and no hidden destructive behavior.
+- Preserve glass, motion and premium interactions while reducing cognitive complexity.

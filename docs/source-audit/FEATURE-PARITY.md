@@ -1,38 +1,44 @@
 # Feature parity matrix
 
-Status values: `MIGRATE`, `REPLACE`, `FIX`, `REMOVE`, `VERIFY`.
+Allowed final audit dispositions are `MIGRATE`, `REPLACE`, `FIX`, `REMOVE`. There are no unresolved `VERIFY` rows.
 
-| Source feature | Source implementation | New implementation | Behavior preserved? | Intentional change? | Tests | Status |
+| Source feature | Source implementation | New implementation intent | Preserve behavior? | Intentional correction | Test focus | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| Login/session | Next API + DB session + cookie + bearer fallback | secure-cookie Worker session | Core login yes | remove localStorage bearer fallback | planned Phase 03 | REPLACE |
-| Registration review | User + RegistrationRequest | D1 identity domain | yes | permission model | planned | MIGRATE |
-| 2FA | auth routes/user fields | Worker auth service | intended | implementation may change for CF runtime | planned | VERIFY |
-| Dashboard | dashboard view/API | route-lazy React feature | intended | information hierarchy may improve | planned | MIGRATE |
-| Meal configuration | meal models/routes/views | meals domain | yes | architecture only | planned | MIGRATE |
-| Resident meal selection | MealEntry/history | meals domain | yes | clarify state/history | planned | MIGRATE |
-| Overrides/presets/guest meals | dedicated models/routes | meals domain | yes | enforce permissions | planned | MIGRATE |
-| Leave-meal integration | LeaveApplication | resident operations | intended | verify edge cases | planned | VERIFY |
-| Kitchen | kitchen view/API | operations feature | intended | UX redesign allowed | planned | MIGRATE |
-| Products/units | Product/Unit | purchases domain | yes | stricter constraints | planned | MIGRATE |
-| Purchases | Purchase/Item + expense link | purchase/posting use cases | yes | immutable posting | planned | FIX |
-| Expenses | Expense | expense/posting use cases | yes | integer money + immutable posting | planned | FIX |
-| Variables | Variable | typed variables | yes | typed validation | planned | MIGRATE |
-| Formula versions | Formula/Version | canonical formula engine | core intent | no fallback | invariant tests | FIX |
-| Monthly snapshot | MonthlySnapshot | immutable snapshot | yes | hash/provenance/queryable indexes | invariant tests | FIX |
-| Bill generation | live table generator | snapshot-only generator | economic intent | algorithm boundary corrected | invariant tests | FIX |
-| Payments | mutable payment route | command/state machine | yes | immutable approval + reversals | invariant tests | FIX |
-| Ledger | LedgerEntry + running balance | immutable events/projection | yes | concurrency/idempotency fixed | invariant tests | FIX |
-| Refunds | Refund + transactions | refund use cases | yes | atomic ledger integration | invariant tests | FIX |
-| Adjustments | Adjustment | correction use case | yes | mandatory correction pathway | invariant tests | MIGRATE |
-| Restrictions | Restriction engine | domain policy | intended | permission/policy cleanup | planned | MIGRATE |
-| Notifications | DB notifications | D1 + Queue delivery | yes | async delivery | planned | REPLACE |
-| Announcements | Announcement | communications feature | yes | runtime split | planned | MIGRATE |
-| Calendar/holidays | Holiday | institution calendar | yes | route/data cleanup | planned | MIGRATE |
-| Reports | report views/APIs | lazy report feature | intended | canonical SQL sources | planned | VERIFY |
-| Audit log | mutable relational model/API | immutable audit events | yes | stronger append-only rule | security tests | FIX |
-| Staff | schema/API | TBD after UI parity check | unknown | unknown | planned | VERIFY |
-| Theme/personalization | source tokens/store | design-system provider | yes | improve route/state model | UI tests | MIGRATE |
-| Files/avatar | public filesystem | R2 | user behavior yes | storage replaced | integration tests | REPLACE |
-| Background tasks | DB task model | Queues/Workflows | observable behavior yes | runtime replaced | integration tests | REPLACE |
+| Login/session | DB sessions + cookie + bearer fallback | secure cookie session | login/logout/session UX | remove token JSON/localStorage bearer | auth/security | FIX |
+| Registration review | User + RegistrationRequest + review actions | identity domain | yes | permission/state cleanup | API/E2E | MIGRATE |
+| 2FA | TOTP/backup codes, feature flag off, plaintext seed | gated secure 2FA | user intent | encrypt seed, secure recovery, no half-feature | security | FIX |
+| Profile/avatar/sessions | profile routes + filesystem avatar + session controls | profile + R2 + session service | yes | storage/runtime replaced | integration | REPLACE |
+| Dashboard | dashboard API/view | lazy routed dashboard | yes | query efficiency | UI/API | MIGRATE |
+| Meals/config | meal configuration/entries/toggles | meals domain | yes | transaction boundaries | invariant/API | MIGRATE |
+| Overrides/presets/guest meals | dedicated models/routes | meals domain | yes | centralized permissions/atomic history | API | MIGRATE |
+| Leave | leave app + meal mutation loop | atomic leave use case | intent | no partial approved leave | invariant/E2E | FIX |
+| Kitchen | kitchen API/view | operations feature | yes | architecture/queries | E2E | MIGRATE |
+| Products/units | CRUD | purchase catalog | yes | constraints | API | MIGRATE |
+| Purchases | approved purchase + linked expense | draft/post purchase command | economics | immutable posting/closed-period guards | accounting | FIX |
+| Expenses | approved mutable/deletable expense | draft/post expense command | economics | integer money/immutability/period guard | accounting | FIX |
+| Variables | variable CRUD | typed variables | yes | validation | unit/API | MIGRATE |
+| Formula versions | Formula + FormulaVersion | canonical formula engine | yes | missing references/fallback fail closed | accounting | FIX |
+| Billing cycle | synchronous close helper | durable Workflow | business outcome | resumable/idempotent state machine | workflow | REPLACE |
+| Monthly snapshot | JSON snapshot retained for traceability | immutable calculation input | yes | becomes source of truth | accounting | FIX |
+| Bill generation | live-table generate/refresh | snapshot-based draft/publish | economic intent | immutable published bills | accounting | FIX |
+| Bill mark-paid | direct APPROVED payment without canonical ledger path | payment posting use case | offline collection UX | one ledger path | accounting | FIX |
+| Payments | mutable payment action routes | payment command/state machine | yes | atomic approval/reversal/idempotency | accounting/API | FIX |
+| Resident fund/ledger | ledger + stored running balance | immutable entries + projection | yes | race-safe derived balance | accounting | FIX |
+| Refund model | Refund + partial transactions | canonical refund use case | yes | concurrency/idempotency | accounting | FIX |
+| Payment-refund path | REFUNDED Payment implementation | removed in favor of canonical refund | product refund UX | eliminate duplicate accounting model | accounting | REMOVE |
+| Adjustments | metadata row | real reversal/adjustment command | correction UX | post economic effects | accounting | FIX |
+| Restrictions | restriction records/lift logic | policy domain | yes | permission cleanup | API | MIGRATE |
+| Notifications | DB notifications/direct side effects | D1 + Queue | yes | async delivery | integration | REPLACE |
+| Announcements | targeted/pinned announcements | communications feature | yes | queue/scheduling | API/E2E | MIGRATE |
+| Calendar/holidays | Holiday/event API/UI | institution calendar | yes | typed rules | API/UI | MIGRATE |
+| Reports | live-table financial/meal/purchase/outstanding/resident | canonical SQL/snapshot reports | UX/categories | historical reproducibility | report invariants | FIX |
+| Export | CSV/export routes and UI | lazy export module/R2 where useful | yes | canonical sources | E2E | MIGRATE |
+| Audit | AuditLog | immutable audit events | yes | append-only/no secrets | security | FIX |
+| Staff | StaffRecord admin API | institution staff subdomain | API capability | integer salary/permissions if used | API | FIX |
+| Settings/policies | Setting/policy routes | typed config domain | yes | validation/permission boundaries | API | MIGRATE |
+| Theme/personalization | theme API/store/tokens | design-system provider | yes | state simplification | UI | MIGRATE |
+| System backup | hard-coded shell/local SQLite | Cloudflare-native operational backup | operational intent | remove shell implementation | operations | REPLACE |
+| Tasks | DB task records + synchronous/request maintenance | Queues/Workflows/scheduled jobs | status/visibility | durable runtime | integration | REPLACE |
+| Repository junk | logs/db/backups/tool/agent/obsolete deployment artifacts | none | no | intentionally excluded | repo hygiene | REMOVE |
 
-Phase 01 cannot exit while any material row remains `VERIFY` without an explicit decision.
+`REMOVE` applies only when the same product intent is supplied by a canonical replacement or the item is non-product repository/runtime junk. No meaningful user capability silently disappears.

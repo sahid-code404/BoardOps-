@@ -1,25 +1,28 @@
-# 14 — Dead code / repository junk
+# 14 — Dead code, obsolete runtime and repository junk
 
-## Do not migrate
+## Intentionally not migrated
 
-The reference repository contains material that is not product source and must not be copied:
+The reference repository contains material that is not authoritative product implementation and must stay out of the rewrite:
 
-- `.zscripts/` process/dev helpers;
-- `agent-ctx/` AI/agent context dumps;
+- `.zscripts/` development/process helpers;
+- `agent-ctx/` and related AI/agent context dumps;
 - `tool-results/` execution artifacts;
-- `backups/` database backup artifact(s);
-- committed local `db/` database;
-- `dev.log`;
-- `Caddyfile` from obsolete deployment path;
-- uploaded/design artifact files such as DFD exports;
-- temporary download/upload/archive material;
-- old experimental scripts/servers where not part of verified product behavior;
-- root `.env`.
+- `backups/` local database backups;
+- committed local `db/` database artifacts;
+- `dev.log` and transient logs;
+- root `.env`;
+- `Caddyfile` / obsolete deployment configuration;
+- upload/design/export artifacts and old archives;
+- temporary experimental scripts/mini servers that have no verified product role;
+- generated Prisma output/build artifacts.
 
-## Migration rule
+## Runtime implementations intentionally replaced, not copied
 
-Code is migrated only when a verified feature/parity row depends on it. The rewrite repository must not become an archive of the old project.
+- hard-coded shell/SQLite system backup route;
+- filesystem avatar storage;
+- `/tmp` JSON rate limiter;
+- request-triggered maintenance/cleanup as a scheduler;
+- duplicate payment-refund implementation once the canonical Refund domain exists;
+- localStorage bearer-token compatibility path.
 
-## Still to verify
-
-The source contains numerous helper/scripts and generated/tool-result files. Each non-product root directory must receive an explicit `REMOVE` disposition before Phase 01 exit.
+Product intent (backup/export, avatar, rate limiting, scheduled work, refunds, sessions) is preserved through target-native implementations; only obsolete mechanisms are removed.

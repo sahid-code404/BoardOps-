@@ -1,23 +1,32 @@
 # 15 — Migration map
 
-| Source concept | Target location | Strategy |
+| Source concept | Target | Strategy |
 | --- | --- | --- |
-| Next.js client UI | `apps/web` React + Vite | Rewrite by feature; preserve visual DNA, not source framework |
-| Next.js API routes | `services/api/src/routes` Hono | Rewrite into route -> use case -> domain -> repository |
-| Prisma schema/SQLite | D1 SQL migrations | Re-model; integer money, constraints, indexes, immutable history |
-| Prisma direct access | repository layer | Replace with prepared D1 SQL |
-| `User.role` + Role tables | permissions package + D1 RBAC | Consolidate to roles/permissions/action authorization |
-| Local upload filesystem | R2 storage service | Replace |
-| `/tmp` rate-limit file | CF rate limiting + D1 cooldowns | Replace |
-| Nodemailer/Gmail coupling | `EmailService` provider abstraction | Replace internals; preserve workflows |
-| BackgroundTask DB polling | Queues/Workflows | Replace runtime model; retain observable task state |
-| Monthly closing helper | Cloudflare Workflow + transactional use cases | Rebuild durable/idempotent |
-| MonthlySnapshot JSON | immutable snapshot tables/blob + hash/version metadata | Rebuild with reproducibility |
-| Bill calculation | snapshot-only accounting package/use case | Rebuild |
-| Resident fund/ledger | immutable ledger events + projections | Rebuild |
-| Zustand navigation view | React Router | Replace navigation mechanism |
-| Glass primitives/tokens | `apps/web/src/components/glass` + tokens | Extract and improve |
-| Large feature components | feature modules + route chunks | Split by responsibility |
-| Source tests | new invariant/API/E2E suites | Port intent only after validating expected behavior |
+| Next.js client UI | `apps/web` React + Vite | Rewrite by feature; preserve visual/product DNA |
+| Zustand `view` navigation | React Router | Replace with URL routes |
+| Next API routes | Hono Worker routes | route -> use case -> domain -> repository |
+| Prisma/SQLite | D1 migrations + prepared SQL | Re-model with constraints/indexes/integer money |
+| `User.role` + Role tables | centralized RBAC/permissions | Consolidate; permission is canonical |
+| Session cookie + bearer/localStorage | secure-cookie session | Remove browser bearer compatibility |
+| Plaintext TOTP seed | protected auth secret storage | Encrypt/secure; keep feature gated until complete |
+| Public filesystem uploads | R2 + D1 metadata | Replace |
+| `/tmp` rate limit | Cloudflare rate limiting + D1 cooldowns | Replace |
+| Nodemailer coupling | EmailService + providers | Replace internals |
+| BackgroundTask/request maintenance | Queues + Workflows + scheduled triggers | Replace runtime, retain observable task state |
+| Shell/local SQLite backup | Cloudflare-native backup/export operations | Remove shell implementation |
+| Monthly close helper | durable Workflow + D1 use cases | Rebuild idempotent/resumable |
+| MonthlySnapshot | immutable snapshot with versions/hashes | Make calculation source of truth |
+| Live-table bill refresh | snapshot-only draft/publish pipeline | Replace |
+| Bill/payment mark-paid variants | one payment posting command | Consolidate |
+| Refund + REFUNDED-payment dual paths | canonical Refund use case | Consolidate |
+| Adjustment metadata | reversal/adjustment accounting command | Fix economic behavior |
+| Mutable/soft-deletable financial docs | immutable posted history | Fix |
+| Ledger runningBalance | immutable entries + rebuildable projection | Fix concurrency |
+| Setting-based idempotency | command idempotency table/unique constraints | Replace |
+| Live reports | snapshot/ledger SQL reports | Fix historical reproducibility |
+| Leave approval loop | atomic leave/meal use case | Fix |
+| Large feature components | feature modules + lazy route chunks | Split by responsibility |
+| Glass primitives/tokens | target design-system primitives/tokens | Extract and improve |
+| Source tests | invariant/API/E2E target suites | Port intent after validating behavior |
 
-No source file is copied blindly.
+No source implementation is copied blindly. Every feature phase begins by re-reading its pinned source behavior and the corresponding correction log.

@@ -1,45 +1,34 @@
 # 02 — Screen inventory
 
-## Verified primary views
+## Verified primary views and major subviews
 
-- Authentication / onboarding screen
-- Profile
+- Authentication/onboarding/verification/reset flows
+- Profile, security, sessions and personalization
 - Dashboard
-- Meal configuration
-- Resident meal booking/toggles
+- Meal configuration and resident meal selection
 - Kitchen operations
-- Billing hub
-- Payments
+- Billing hub and bill detail/actions
+- Payments and payment administration
 - Expenses hub
-- Purchases
-- Products
-- Resident funds
-- Monthly closing
-- Formula engine / variables
-- Users / resident management
-- Resident 360 dialog
-- Notifications hub
-- Announcements
-- Calendar / holidays
-- Reports
-- Settings hub
-- System hub
-- Audit view
-- Personalization/theme controls
+- Purchases and products/units
+- Resident funds and ledger history
+- Monthly closing/readiness
+- Formula engine and variables
+- Users/resident management and resident 360
+- Notifications and announcements
+- Calendar/holidays
+- Reports with financial, meals, purchases, outstanding and residents tabs plus export paths
+- Settings/policies/institution configuration
+- Audit
+- Tasks/background-work status
+- System/data export and backup administration concept
 
-## Current navigation behavior
+## Navigation architecture observed
 
-The source is effectively a client-side single-screen application controlled by Zustand `view` state rather than URL-addressable feature routes. `LazyViewRouter` does perform feature-level `React.lazy()` loading, which is a useful performance pattern to retain conceptually.
+The source is effectively a client-side single-screen application whose primary destination is stored as a Zustand `view` key. `LazyViewRouter` uses feature-level `React.lazy()` boundaries, which is a positive performance pattern.
 
-## Rewrite UX direction
+## Rewrite UX disposition
 
-- Use React Router routes for shareable/back-button-safe navigation.
-- Preserve mobile bottom navigation and responsive shell behavior where it improves usability.
-- Keep glass surfaces, animated background, transitions, skeletons and micro-interactions.
-- Remove the need for a monolithic state switch to represent navigation.
-- Financial actions must surface explicit status, immutable history and correction paths.
-- No fake financial values while an API is unavailable.
+Use URL-addressable React Router routes, preserve responsive mobile bottom navigation where useful, preserve glass/motion/skeleton/animated-background product DNA, and expose explicit draft/approved/published/reversed states for financial records. Permission-driven navigation replaces the source admin boolean/list approach.
 
-## Phase 01 verification still required
-
-Nested dialogs/sheets and admin subviews must be mapped to individual parity rows before the audit exit gate is marked complete.
+Phase 01 screen inventory is complete. Detailed component behavior must be re-read again immediately before the corresponding feature phase is implemented.
