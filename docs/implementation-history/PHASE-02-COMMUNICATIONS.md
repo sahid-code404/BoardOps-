@@ -47,5 +47,10 @@ Password: `boardops-demo`
 
 The seed includes one published announcement with in-app notifications for every active local user.
 
+## CI verification
+Implementation commit `12ba5f7ce36595e3336059fa2b4cda4b4fe15218` passed CI run `33255127654`.
+
+The run passed frozen dependency installation, TypeScript checks, unit tests, production build, every local D1 migration through `0007_communications.sql`, deterministic seed execution, Worker startup, `/health`, `/ready`, the user-reported Founders Day archive regression, and the communications publish → targeted notification → read-state → durable outbox → archive regression.
+
 ## Status
-IMPLEMENTED — CI must pass TypeScript, build, migrations, seed, calendar regression and the communications publish/fan-out/read/archive/outbox regression before this checkpoint is complete.
+CHECKPOINT COMPLETE — announcements, in-app notifications and the durable D1 outbox boundary are implemented and CI-verified. External delivery and automatic scheduling remain deliberately deferred.
