@@ -44,5 +44,10 @@ Password: `boardops-demo`
 
 The deterministic seed includes three resident presets and one pending leave application for Ananya Rao covering `2026-08-31` through `2026-09-01` so the admin approval flow can be tested immediately.
 
+## CI verification
+The operational implementation landed in `72542f36ccf01c079dd2deb9b9a74f0e6f985c0b`. A strict optional-property TypeScript issue in the frontend was corrected in `7fec8b4fe030354fbc53d9cb6b2cb1eb1a6c3870`.
+
+CI run `33252665191` passed frozen dependency installation, TypeScript checks, unit tests, production build, all local D1 migrations including `0004_meal_operations.sql`, Worker startup, `/health`, and `/ready`.
+
 ## Status
-CHECKPOINT IMPLEMENTED — CI verification must pass before this checkpoint is considered complete.
+CHECKPOINT COMPLETE — meal presets, administrator post-cutoff overrides, guest demand, and atomic leave-to-meal operations are implemented and CI-verified. Financial and calendar-dependent meal behavior remains deliberately deferred.
