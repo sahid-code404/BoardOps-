@@ -1,4 +1,5 @@
 import app from "./index";
+import { calendarArchiveRouter } from "./calendar-archive";
 import { calendarGuardRouter, calendarRouter } from "./calendar";
 import { mealOperationsRouter } from "./meal-operations";
 import { operationsRouter } from "./meals";
@@ -8,6 +9,10 @@ import { operationsRouter } from "./meals";
 app.route("/api/v1", calendarGuardRouter);
 app.route("/api/v1", operationsRouter);
 app.route("/api/v1", mealOperationsRouter);
+
+// The archive route is mounted before the general calendar router so the
+// explicit, transactionally-restored implementation owns DELETE requests.
+app.route("/api/v1", calendarArchiveRouter);
 app.route("/api/v1", calendarRouter);
 
 export default app;

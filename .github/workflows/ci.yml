@@ -45,6 +45,9 @@ jobs:
       - name: Apply local D1 migrations
         run: pnpm db:migrate:local
 
+      - name: Seed local D1
+        run: pnpm db:seed:local
+
       - name: Start local Worker
         run: |
           (cd services/api && pnpm exec wrangler dev --port 8787 > /tmp/boardops-worker.log 2>&1 & echo $! > /tmp/boardops-worker.pid)
@@ -59,6 +62,51 @@ jobs:
         run: |
           curl --fail --silent http://127.0.0.1:8787/health
           curl --fail --silent http://127.0.0.1:8787/ready
+
+      - name: Calendar archive regression
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error \
+            -c /tmp/resident.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"arjun@boardops.local","password":"boardops-demo"}' \
+            http://127.0.0.1:8787/api/v1/auth/login > /tmp/resident-login.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            'http://127.0.0.1:8787/api/v1/meals/entries?date=2026-09-02' > /tmp/closed-meals.json
+          grep -q '"status":"OFF"' /tmp/closed-meals.json
+          grep -q '"locked":true' /tmp/closed-meals.json
+
+          curl --fail --silent --show-error \
+            -c /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"admin@boardops.local","password":"boardops-demo"}' \
+            http://127.0.0.1:8787/api/v1/auth/login > /tmp/admin-login.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -X DELETE \
+            -H 'Content-Type: application/json' \
+            -d '{}' \
+            http://127.0.0.1:8787/api/v1/calendar/events/calendar-closure-001 > /tmp/archive.json
+          cat /tmp/archive.json
+          grep -q '"archived":true' /tmp/archive.json
+          grep -q '"changed":true' /tmp/archive.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/calendar/service-status?date=2026-09-02' > /tmp/service-status.json
+          cat /tmp/service-status.json
+          grep -q '"mealsDisabled":false' /tmp/service-status.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            'http://127.0.0.1:8787/api/v1/meals/entries?date=2026-09-02' > /tmp/restored-meals.json
+          cat /tmp/restored-meals.json
+          grep -q '"status":"ON"' /tmp/restored-meals.json
+          grep -q '"locked":false' /tmp/restored-meals.json
 
       - name: Stop local Worker
         if: always()
