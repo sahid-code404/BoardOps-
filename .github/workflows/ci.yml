@@ -108,6 +108,63 @@ jobs:
           grep -q '"status":"ON"' /tmp/restored-meals.json
           grep -q '"locked":false' /tmp/restored-meals.json
 
+      - name: Communications regression
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"title":"CI operations notice","body":"This published announcement verifies in-app fan-out and the durable outbox.","type":"INFO","priority":"HIGH","targetAudience":"ALL","isPinned":true,"status":"PUBLISHED"}' \
+            http://127.0.0.1:8787/api/v1/announcements > /tmp/announcement-create.json
+          cat /tmp/announcement-create.json
+          ANNOUNCEMENT_ID=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('/tmp/announcement-create.json','utf8')); process.stdout.write(x.data.id)")
+          test -n "$ANNOUNCEMENT_ID"
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-announcements.json
+          grep -q 'CI operations notice' /tmp/resident-announcements.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/resident-notifications.json
+          grep -q 'CI operations notice' /tmp/resident-notifications.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            -X PATCH \
+            -H 'Content-Type: application/json' \
+            -d '{"markAllRead":true}' \
+            http://127.0.0.1:8787/api/v1/notifications > /tmp/mark-read.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/after-read.json
+          grep -q '"unreadCount":0' /tmp/after-read.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/communications/outbox?status=PENDING' > /tmp/outbox.json
+          grep -q "$ANNOUNCEMENT_ID" /tmp/outbox.json
+          grep -q 'announcement.published' /tmp/outbox.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -X DELETE \
+            -H 'Content-Type: application/json' \
+            -d '{}' \
+            "http://127.0.0.1:8787/api/v1/announcements/$ANNOUNCEMENT_ID" > /tmp/archive-announcement.json
+          grep -q '"archived":true' /tmp/archive-announcement.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-after-archive.json
+          if grep -q 'CI operations notice' /tmp/resident-after-archive.json; then
+            echo 'Archived announcement remained visible to resident'
+            exit 1
+          fi
+
       - name: Stop local Worker
         if: always()
         run: |
