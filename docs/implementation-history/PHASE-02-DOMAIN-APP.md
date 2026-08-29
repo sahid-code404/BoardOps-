@@ -34,5 +34,8 @@ Admin: `admin@boardops.local`
 Resident: `arjun@boardops.local`  
 Password: `boardops-demo`
 
+## CI verification
+CI run `33250647451` passed frozen install, TypeScript checks, unit tests, builds, local D1 migrations, local Worker startup, and `/health` + `/ready` probes.
+
 ## Status
-IN PROGRESS until CI and local Worker probes are green for this commit.
+CHECKPOINT 1 COMPLETE — Phase 02 continues with the remaining domain model and later feature slices.
