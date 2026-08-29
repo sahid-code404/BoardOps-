@@ -98,15 +98,102 @@ jobs:
           curl --fail --silent --show-error \
             -b /tmp/admin.cookies \
             'http://127.0.0.1:8787/api/v1/calendar/service-status?date=2026-09-02' > /tmp/service-status.json
-          cat /tmp/service-status.json
           grep -q '"mealsDisabled":false' /tmp/service-status.json
 
           curl --fail --silent --show-error \
             -b /tmp/resident.cookies \
             'http://127.0.0.1:8787/api/v1/meals/entries?date=2026-09-02' > /tmp/restored-meals.json
-          cat /tmp/restored-meals.json
           grep -q '"status":"ON"' /tmp/restored-meals.json
           grep -q '"locked":false' /tmp/restored-meals.json
+
+      - name: Meal operations action regression
+        run: |
+          set -euo pipefail
+
+          # Reproduce the exact seeded leave shown in the admin UI and approve it.
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -X PATCH \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"APPROVED","adminNotes":"CI seeded leave approval"}' \
+            http://127.0.0.1:8787/api/v1/leave/leave-demo-ananya-001 > /tmp/leave-approve.json
+          cat /tmp/leave-approve.json
+          grep -q '"status":"APPROVED"' /tmp/leave-approve.json
+          grep -q '"affectedMealEntries":6' /tmp/leave-approve.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            http://127.0.0.1:8787/api/v1/leave > /tmp/admin-leave.json
+          grep -q 'leave-demo-ananya-001' /tmp/admin-leave.json
+          grep -q '"status":"APPROVED"' /tmp/admin-leave.json
+
+          # Submit another leave as a resident and reject it as admin.
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"startDate":"2026-09-05","endDate":"2026-09-05","reason":"CI rejection path","mealType":"ALL","mealIds":[]}' \
+            http://127.0.0.1:8787/api/v1/leave > /tmp/leave-create.json
+          LEAVE_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/leave-create.json','utf8'));process.stdout.write(x.data.id)")
+          test -n "$LEAVE_ID"
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -X PATCH \
+            -H 'Content-Type: application/json' \
+            -d '{"status":"REJECTED","adminNotes":"CI rejection"}' \
+            "http://127.0.0.1:8787/api/v1/leave/$LEAVE_ID" > /tmp/leave-reject.json
+          grep -q '"status":"REJECTED"' /tmp/leave-reject.json
+
+          # Resident preset and direct toggle actions.
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"presetId":"preset-all-off","serviceDate":"2026-09-05"}' \
+            http://127.0.0.1:8787/api/v1/meals/presets/apply > /tmp/preset.json
+          grep -q '"changed"' /tmp/preset.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            'http://127.0.0.1:8787/api/v1/meals/entries?date=2026-09-05' > /tmp/entries.json
+          ENTRY_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/entries.json','utf8'));const e=x.data.meals.find(v=>!v.locked);if(!e)process.exit(2);process.stdout.write(e.id)")
+          test -n "$ENTRY_ID"
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            -X PATCH \
+            -H 'Content-Type: application/json' \
+            -d "{\"entryId\":\"$ENTRY_ID\",\"status\":\"ON\"}" \
+            http://127.0.0.1:8787/api/v1/meals/toggle > /tmp/toggle.json
+          grep -q '"changed":true' /tmp/toggle.json
+
+          # Guest add/cancel buttons.
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"mealId":"meal-breakfast","serviceDate":"2026-09-05","guestCount":2,"guestName":"CI guests"}' \
+            http://127.0.0.1:8787/api/v1/kitchen/guests > /tmp/guest-create.json
+          GUEST_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/guest-create.json','utf8'));process.stdout.write(x.data.id)")
+          test -n "$GUEST_ID"
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -X DELETE \
+            -H 'Content-Type: application/json' \
+            -d '{}' \
+            "http://127.0.0.1:8787/api/v1/kitchen/guests/$GUEST_ID" > /tmp/guest-cancel.json
+          grep -q '"cancelled":true' /tmp/guest-cancel.json
+
+          # Administrator post-cutoff override.
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            'http://127.0.0.1:8787/api/v1/kitchen?date=2026-08-28' > /tmp/kitchen-past.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"userId":"user-001","mealId":"meal-breakfast","serviceDate":"2026-08-28","action":"TURN_OFF","reason":"CI admin override"}' \
+            http://127.0.0.1:8787/api/v1/meals/override > /tmp/override.json
+          grep -q '"changed":true' /tmp/override.json
 
       - name: Communications regression
         run: |
@@ -117,49 +204,27 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{"title":"CI operations notice","body":"This published announcement verifies in-app fan-out and the durable outbox.","type":"INFO","priority":"HIGH","targetAudience":"ALL","isPinned":true,"status":"PUBLISHED"}' \
             http://127.0.0.1:8787/api/v1/announcements > /tmp/announcement-create.json
-          cat /tmp/announcement-create.json
           ANNOUNCEMENT_ID=$(node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('/tmp/announcement-create.json','utf8')); process.stdout.write(x.data.id)")
           test -n "$ANNOUNCEMENT_ID"
 
-          curl --fail --silent --show-error \
-            -b /tmp/resident.cookies \
-            http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-announcements.json
+          curl --fail --silent --show-error -b /tmp/resident.cookies http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-announcements.json
           grep -q 'CI operations notice' /tmp/resident-announcements.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/resident.cookies \
-            'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/resident-notifications.json
+          curl --fail --silent --show-error -b /tmp/resident.cookies 'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/resident-notifications.json
           grep -q 'CI operations notice' /tmp/resident-notifications.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/resident.cookies \
-            -X PATCH \
-            -H 'Content-Type: application/json' \
-            -d '{"markAllRead":true}' \
-            http://127.0.0.1:8787/api/v1/notifications > /tmp/mark-read.json
-
-          curl --fail --silent --show-error \
-            -b /tmp/resident.cookies \
-            'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/after-read.json
+          curl --fail --silent --show-error -b /tmp/resident.cookies -X PATCH -H 'Content-Type: application/json' -d '{"markAllRead":true}' http://127.0.0.1:8787/api/v1/notifications > /tmp/mark-read.json
+          curl --fail --silent --show-error -b /tmp/resident.cookies 'http://127.0.0.1:8787/api/v1/notifications?unread=true' > /tmp/after-read.json
           grep -q '"unreadCount":0' /tmp/after-read.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/admin.cookies \
-            'http://127.0.0.1:8787/api/v1/communications/outbox?status=PENDING' > /tmp/outbox.json
+          curl --fail --silent --show-error -b /tmp/admin.cookies 'http://127.0.0.1:8787/api/v1/communications/outbox?status=PENDING' > /tmp/outbox.json
           grep -q "$ANNOUNCEMENT_ID" /tmp/outbox.json
           grep -q 'announcement.published' /tmp/outbox.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/admin.cookies \
-            -X DELETE \
-            -H 'Content-Type: application/json' \
-            -d '{}' \
-            "http://127.0.0.1:8787/api/v1/announcements/$ANNOUNCEMENT_ID" > /tmp/archive-announcement.json
+          curl --fail --silent --show-error -b /tmp/admin.cookies -X DELETE -H 'Content-Type: application/json' -d '{}' "http://127.0.0.1:8787/api/v1/announcements/$ANNOUNCEMENT_ID" > /tmp/archive-announcement.json
           grep -q '"archived":true' /tmp/archive-announcement.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/resident.cookies \
-            http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-after-archive.json
+          curl --fail --silent --show-error -b /tmp/resident.cookies http://127.0.0.1:8787/api/v1/announcements > /tmp/resident-after-archive.json
           if grep -q 'CI operations notice' /tmp/resident-after-archive.json; then
             echo 'Archived announcement remained visible to resident'
             exit 1
