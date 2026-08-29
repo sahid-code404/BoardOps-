@@ -1,4 +1,5 @@
 import app from "./index";
+import { accountingRouter } from "./accounting";
 import { calendarArchiveRouter } from "./calendar-archive";
 import { calendarGuardRouter, calendarRouter } from "./calendar";
 import { communicationsRouter } from "./communications";
@@ -16,5 +17,6 @@ app.route("/api/v1", mealOperationsRouter);
 app.route("/api/v1", calendarArchiveRouter);
 app.route("/api/v1", calendarRouter);
 app.route("/api/v1", communicationsRouter);
+app.route("/api/v1", accountingRouter);
 
 export default app;

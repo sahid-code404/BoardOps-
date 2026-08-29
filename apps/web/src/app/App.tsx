@@ -33,6 +33,7 @@ import { CalendarPage } from "../features/calendar/CalendarPage";
 import { CommunicationsPage } from "../features/communications/CommunicationsPage";
 import { NotificationBell } from "../features/communications/NotificationBell";
 import { MealsPage } from "../features/meals/MealsPage";
+import { PaymentsPage } from "../features/payments/PaymentsPage";
 import { ResidentsPage } from "../features/residents/ResidentsPage";
 import { apiRequest } from "../lib/api";
 
@@ -60,7 +61,7 @@ const navItems = [
   { to: "/calendar", label: "Calendar", icon: CalendarDays, roles: ["ADMIN", "USER"] as Role[], live: true },
   { to: "/announcements", label: "Announcements", icon: Megaphone, roles: ["ADMIN", "USER"] as Role[], live: true },
   { to: "/billing", label: "Billing", icon: Wallet, roles: ["ADMIN", "USER"] as Role[], live: false },
-  { to: "/payments", label: "Payments", icon: CreditCard, roles: ["ADMIN", "USER"] as Role[], live: false },
+  { to: "/payments", label: "Payments", icon: CreditCard, roles: ["ADMIN", "USER"] as Role[], live: true },
   { to: "/expenses", label: "Expenses", icon: Receipt, roles: ["ADMIN"] as Role[], live: false },
   { to: "/closing", label: "Monthly Closing", icon: CalendarCheck, roles: ["ADMIN"] as Role[], live: false },
   { to: "/reports", label: "Reports", icon: BarChart3, roles: ["ADMIN"] as Role[], live: false },
@@ -105,7 +106,7 @@ function LoginScreen() {
     <div className="mesh mesh-one" /><div className="mesh mesh-two" />
     <motion.section className="auth-card" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
       <div className="auth-brand"><div className="brand-mark"><Sparkles size={20} /></div><div><strong>BoardOps</strong><span>Institution operations, rebuilt correctly</span></div></div>
-      <div className="auth-copy"><span className="eyebrow">LOCAL DEVELOPMENT CHECKPOINT</span><h1>Welcome back.</h1><p>Sign in to test resident lifecycle, meals, leave, calendar, announcements and in-app notifications against local D1.</p></div>
+      <div className="auth-copy"><span className="eyebrow">LOCAL DEVELOPMENT CHECKPOINT</span><h1>Welcome back.</h1><p>Sign in to test resident lifecycle, meals, leave, calendar, announcements, notifications and the canonical resident-fund ledger against local D1.</p></div>
       <form className="login-form" onSubmit={(event) => { event.preventDefault(); login.mutate(); }}>
         <label><span>Email</span><div className="input-wrap"><UserRound size={18} /><input value={email} onChange={(event) => setEmail(event.target.value)} type="email" autoComplete="username" /></div></label>
         <label><span>Password</span><div className="input-wrap"><LockKeyhole size={18} /><input value={password} onChange={(event) => setPassword(event.target.value)} type="password" autoComplete="current-password" /></div></label>
@@ -153,6 +154,7 @@ function Shell({ user }: { user: SessionUser }) {
           <Route path="/meals" element={<MealsPage user={user} />} />
           <Route path="/calendar" element={<CalendarPage user={user} />} />
           <Route path="/announcements" element={<CommunicationsPage user={user} />} />
+          <Route path="/payments" element={<PaymentsPage user={user} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
@@ -186,7 +188,7 @@ function Dashboard({ user }: { user: SessionUser }) {
   ];
 
   return <motion.div className="page-stack" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-    <section className="welcome-card glass-surface"><div><p>{dateLabel()}</p><h1>{greeting()}, <span>{user.name.split(" ")[0]}</span> <span className="wave">👋</span></h1><small>{user.role === "ADMIN" ? "Your BoardOps workspace is ready." : `Resident workspace · ${user.room ?? "Room not assigned"}`}</small></div><div className="phase-pill"><span className="live-dot" />Operations & communications checkpoint</div></section>
+    <section className="welcome-card glass-surface"><div><p>{dateLabel()}</p><h1>{greeting()}, <span>{user.name.split(" ")[0]}</span> <span className="wave">👋</span></h1><small>{user.role === "ADMIN" ? "Your BoardOps workspace is ready." : `Resident workspace · ${user.room ?? "Room not assigned"}`}</small></div><div className="phase-pill"><span className="live-dot" />Operations + canonical payments checkpoint</div></section>
     {user.role === "ADMIN" ? <>
       <section className="kpi-grid">{adminKpis.map(({ label, value, icon: Icon, hint }) => <motion.article whileHover={{ y: -3 }} key={label} className="kpi-card glass-surface"><div className="kpi-icon"><Icon size={19} /></div><div><span>{label}</span><strong>{value}</strong><small>{hint}</small></div></motion.article>)}</section>
       <section className="dashboard-grid">
@@ -195,8 +197,8 @@ function Dashboard({ user }: { user: SessionUser }) {
           <ModuleRow title="Meals & kitchen" detail="Daily meal engine, presets, leave and guest demand" status="Live" live />
           <ModuleRow title="Calendar & holidays" detail="Typed institution events with audited meal-service rules" status="Live" live />
           <ModuleRow title="Announcements & notifications" detail="Targeted notices, in-app fan-out and durable outbox" status="Live" live />
+          <ModuleRow title="Payments & funds" detail="Integer minor units, idempotent posting and immutable ledger reversals" status="Live" live />
           <ModuleRow title="Billing & closing" detail="Snapshot-only accounting model required" status="Planned" />
-          <ModuleRow title="Payments & funds" detail="Canonical ledger path required" status="Planned" />
         </div></article>
         <article className="panel glass-surface"><div className="panel-head"><div><span className="eyebrow">RECENT ACTIVITY</span><h2>Audit trail</h2></div><Activity size={20} /></div><div className="activity-list">{(data?.recentActivity ?? []).map((item: any) => <div className="activity-row" key={item.id}><div className="activity-icon"><Activity size={15} /></div><div><strong>{item.actorName}</strong><span>{String(item.action).toLowerCase().replaceAll("_", " ")}</span><small>{new Date(item.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</small></div></div>)}</div></article>
       </section>
@@ -206,8 +208,8 @@ function Dashboard({ user }: { user: SessionUser }) {
         <ModuleRow title="Meal control" detail="Daily toggles, presets and leave with server-enforced cutoffs" status="Live" live />
         <ModuleRow title="Institution calendar" detail="Upcoming events and meal-service closures" status="Live" live />
         <ModuleRow title="Announcements" detail="Published institution notices with personal notifications" status="Live" live />
+        <ModuleRow title="Payments" detail="Immutable receipts and your canonical resident fund ledger" status="Live" live />
         <ModuleRow title="Bills" detail="Snapshot-backed monthly charges" status="Planned" />
-        <ModuleRow title="Payments" detail="Receipts and resident fund ledger" status="Planned" />
       </div></article>
     </section>}
   </motion.div>;

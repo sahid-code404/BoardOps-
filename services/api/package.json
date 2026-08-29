@@ -8,7 +8,7 @@
     "build": "wrangler deploy --dry-run --outdir dist",
     "typecheck": "tsc --noEmit --pretty false",
     "db:migrate:local": "wrangler d1 migrations apply boardops-local --local",
-    "db:seed:local": "wrangler d1 execute boardops-local --local --file=../../scripts/seed-local.sql && wrangler d1 execute boardops-local --local --file=../../scripts/seed-communications.sql"
+    "db:seed:local": "wrangler d1 execute boardops-local --local --file=../../scripts/seed-local.sql && wrangler d1 execute boardops-local --local --file=../../scripts/seed-communications.sql && wrangler d1 execute boardops-local --local --file=../../scripts/seed-financial.sql"
   },
   "dependencies": {
     "hono": "4.13.5",

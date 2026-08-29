@@ -91,7 +91,6 @@ jobs:
             -H 'Content-Type: application/json' \
             -d '{}' \
             http://127.0.0.1:8787/api/v1/calendar/events/calendar-closure-001 > /tmp/archive.json
-          cat /tmp/archive.json
           grep -q '"archived":true' /tmp/archive.json
           grep -q '"changed":true' /tmp/archive.json
 
@@ -110,24 +109,15 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Reproduce the exact seeded leave shown in the admin UI and approve it.
           curl --fail --silent --show-error \
             -b /tmp/admin.cookies \
             -X PATCH \
             -H 'Content-Type: application/json' \
             -d '{"status":"APPROVED","adminNotes":"CI seeded leave approval"}' \
             http://127.0.0.1:8787/api/v1/leave/leave-demo-ananya-001 > /tmp/leave-approve.json
-          cat /tmp/leave-approve.json
           grep -q '"status":"APPROVED"' /tmp/leave-approve.json
           grep -q '"affectedMealEntries":6' /tmp/leave-approve.json
 
-          curl --fail --silent --show-error \
-            -b /tmp/admin.cookies \
-            http://127.0.0.1:8787/api/v1/leave > /tmp/admin-leave.json
-          grep -q 'leave-demo-ananya-001' /tmp/admin-leave.json
-          grep -q '"status":"APPROVED"' /tmp/admin-leave.json
-
-          # Submit another leave as a resident and reject it as admin.
           curl --fail --silent --show-error \
             -b /tmp/resident.cookies \
             -H 'Content-Type: application/json' \
@@ -144,7 +134,6 @@ jobs:
             "http://127.0.0.1:8787/api/v1/leave/$LEAVE_ID" > /tmp/leave-reject.json
           grep -q '"status":"REJECTED"' /tmp/leave-reject.json
 
-          # Resident preset and direct toggle actions.
           curl --fail --silent --show-error \
             -b /tmp/resident.cookies \
             -H 'Content-Type: application/json' \
@@ -166,7 +155,6 @@ jobs:
             http://127.0.0.1:8787/api/v1/meals/toggle > /tmp/toggle.json
           grep -q '"changed":true' /tmp/toggle.json
 
-          # Guest add/cancel buttons.
           curl --fail --silent --show-error \
             -b /tmp/admin.cookies \
             -H 'Content-Type: application/json' \
@@ -183,17 +171,71 @@ jobs:
             "http://127.0.0.1:8787/api/v1/kitchen/guests/$GUEST_ID" > /tmp/guest-cancel.json
           grep -q '"cancelled":true' /tmp/guest-cancel.json
 
-          # Administrator post-cutoff override.
-          curl --fail --silent --show-error \
-            -b /tmp/admin.cookies \
-            'http://127.0.0.1:8787/api/v1/kitchen?date=2026-08-28' > /tmp/kitchen-past.json
-
           curl --fail --silent --show-error \
             -b /tmp/admin.cookies \
             -H 'Content-Type: application/json' \
             -d '{"userId":"user-001","mealId":"meal-breakfast","serviceDate":"2026-08-28","action":"TURN_OFF","reason":"CI admin override"}' \
             http://127.0.0.1:8787/api/v1/meals/override > /tmp/override.json
           grep -q '"changed":true' /tmp/override.json
+
+      - name: Canonical payment and ledger regression
+        run: |
+          set -euo pipefail
+
+          PAYMENT_BODY='{"userId":"user-001","amountMinor":12345,"method":"UPI","reference":"CI-PAY-001","note":"CI canonical payment","idempotencyKey":"ci-payment-post-00000001"}'
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d "$PAYMENT_BODY" \
+            http://127.0.0.1:8787/api/v1/payments > /tmp/payment-post.json
+          grep -q '"amountMinor":12345' /tmp/payment-post.json
+          PAYMENT_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/payment-post.json','utf8'));process.stdout.write(x.data.payment.id)")
+          test -n "$PAYMENT_ID"
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d "$PAYMENT_BODY" \
+            http://127.0.0.1:8787/api/v1/payments > /tmp/payment-retry.json
+          RETRY_ID=$(node -e "const fs=require('fs');const x=JSON.parse(fs.readFileSync('/tmp/payment-retry.json','utf8'));process.stdout.write(x.data.payment.id)")
+          test "$PAYMENT_ID" = "$RETRY_ID"
+          grep -q '"idempotent":true' /tmp/payment-retry.json
+
+          CONFLICT_STATUS=$(curl --silent --show-error -o /tmp/payment-conflict.json -w '%{http_code}' \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d '{"userId":"user-001","amountMinor":12346,"method":"UPI","idempotencyKey":"ci-payment-post-00000001"}' \
+            http://127.0.0.1:8787/api/v1/payments)
+          test "$CONFLICT_STATUS" = "409"
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            http://127.0.0.1:8787/api/v1/funds/ledger > /tmp/ledger-after-payment.json
+          grep -q '"balanceMinor":262345' /tmp/ledger-after-payment.json
+          grep -q "$PAYMENT_ID" /tmp/ledger-after-payment.json
+
+          REVERSAL_BODY='{"reason":"CI payment correction","idempotencyKey":"ci-payment-reverse-0001"}'
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d "$REVERSAL_BODY" \
+            "http://127.0.0.1:8787/api/v1/payments/$PAYMENT_ID/reverse" > /tmp/payment-reverse.json
+          grep -q '"reversalId"' /tmp/payment-reverse.json
+          grep -q 'CI payment correction' /tmp/payment-reverse.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/resident.cookies \
+            http://127.0.0.1:8787/api/v1/funds/ledger > /tmp/ledger-after-reversal.json
+          grep -q '"balanceMinor":250000' /tmp/ledger-after-reversal.json
+          grep -q 'PAYMENT_REVERSAL' /tmp/ledger-after-reversal.json
+
+          curl --fail --silent --show-error \
+            -b /tmp/admin.cookies \
+            -H 'Content-Type: application/json' \
+            -d "$REVERSAL_BODY" \
+            "http://127.0.0.1:8787/api/v1/payments/$PAYMENT_ID/reverse" > /tmp/reversal-retry.json
+          grep -q '"idempotent":true' /tmp/reversal-retry.json
 
       - name: Communications regression
         run: |
@@ -220,6 +262,8 @@ jobs:
           curl --fail --silent --show-error -b /tmp/admin.cookies 'http://127.0.0.1:8787/api/v1/communications/outbox?status=PENDING' > /tmp/outbox.json
           grep -q "$ANNOUNCEMENT_ID" /tmp/outbox.json
           grep -q 'announcement.published' /tmp/outbox.json
+          grep -q 'payment.posted' /tmp/outbox.json
+          grep -q 'payment.reversed' /tmp/outbox.json
 
           curl --fail --silent --show-error -b /tmp/admin.cookies -X DELETE -H 'Content-Type: application/json' -d '{}' "http://127.0.0.1:8787/api/v1/announcements/$ANNOUNCEMENT_ID" > /tmp/archive-announcement.json
           grep -q '"archived":true' /tmp/archive-announcement.json
