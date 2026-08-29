@@ -7,6 +7,7 @@ import { App } from "./app/App";
 import "./styles/global.css";
 import "./styles/phase02-identity.css";
 import "./styles/phase02-meals.css";
+import "./styles/phase02-meal-ops.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,8 +1,8 @@
--- Deterministic development-only seed for the Phase 02 meals/kitchen checkpoint.
+-- Deterministic development-only seed for the Phase 02 meal-operations checkpoint.
 -- Never use these identities or values in production.
 
 INSERT INTO app_schema_metadata (key, value, updated_at)
-VALUES ('seed_profile', 'phase-02-meals-development-only', CURRENT_TIMESTAMP)
+VALUES ('seed_profile', 'phase-02-meal-operations-development-only', CURRENT_TIMESTAMP)
 ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at;
 
 INSERT INTO institutions (id, name, currency, timezone)
@@ -40,11 +40,36 @@ INSERT INTO meal_configurations (
   ('meal-dinner', 'inst-boardops-demo', 'dinner', 'Dinner', 'Evening meal service', '🌙', '#8b5cf6', 'REGULAR', 30, 'ON', 'VISIBLE', 'SAME_DAY', '14:00', 0, '19:30', '21:00', 'ACTIVE')
 ON CONFLICT(institution_id, name) DO UPDATE SET display_name = excluded.display_name, description = excluded.description, icon = excluded.icon, color = excluded.color, meal_type = excluded.meal_type, display_order = excluded.display_order, default_state = excluded.default_state, default_visibility = excluded.default_visibility, cutoff_strategy = excluded.cutoff_strategy, cutoff_time = excluded.cutoff_time, cutoff_offset_minutes = excluded.cutoff_offset_minutes, start_time = excluded.start_time, end_time = excluded.end_time, status = excluded.status, updated_at = CURRENT_TIMESTAMP;
 
+INSERT INTO meal_presets (id, institution_id, name, description) VALUES
+  ('preset-all-on', 'inst-boardops-demo', 'All meals', 'Turn every editable meal ON'),
+  ('preset-all-off', 'inst-boardops-demo', 'Skip all', 'Turn every editable meal OFF'),
+  ('preset-lunch-only', 'inst-boardops-demo', 'Lunch only', 'Breakfast and dinner OFF, lunch ON')
+ON CONFLICT(institution_id, name) DO UPDATE SET description = excluded.description, updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO meal_preset_items (id, preset_id, meal_id, desired_state) VALUES
+  ('preset-all-on-breakfast', 'preset-all-on', 'meal-breakfast', 'ON'),
+  ('preset-all-on-lunch', 'preset-all-on', 'meal-lunch', 'ON'),
+  ('preset-all-on-dinner', 'preset-all-on', 'meal-dinner', 'ON'),
+  ('preset-all-off-breakfast', 'preset-all-off', 'meal-breakfast', 'OFF'),
+  ('preset-all-off-lunch', 'preset-all-off', 'meal-lunch', 'OFF'),
+  ('preset-all-off-dinner', 'preset-all-off', 'meal-dinner', 'OFF'),
+  ('preset-lunch-only-breakfast', 'preset-lunch-only', 'meal-breakfast', 'OFF'),
+  ('preset-lunch-only-lunch', 'preset-lunch-only', 'meal-lunch', 'ON'),
+  ('preset-lunch-only-dinner', 'preset-lunch-only', 'meal-dinner', 'OFF')
+ON CONFLICT(preset_id, meal_id) DO UPDATE SET desired_state = excluded.desired_state;
+
+INSERT INTO leave_applications (
+  id, institution_id, user_id, start_date, end_date, reason, meal_type, meal_ids_json, status
+) VALUES
+  ('leave-demo-ananya-001', 'inst-boardops-demo', 'user-002', '2026-08-31', '2026-09-01', 'Family visit outside campus', 'ALL', '[]', 'PENDING')
+ON CONFLICT(id) DO NOTHING;
+
 INSERT INTO audit_events (id, actor_user_id, action, entity_type, entity_id, detail, created_at) VALUES
   ('audit-seed-001', 'user-admin-demo', 'DOMAIN_SEEDED', 'System', 'phase-02', 'Phase 02 local demo data created', '2026-08-29T09:00:00Z'),
   ('audit-seed-002', 'user-admin-demo', 'RESIDENT_REVIEWED', 'User', 'user-004', 'Resident profile verified for local demo', '2026-08-29T09:30:00Z'),
   ('audit-seed-003', 'user-admin-demo', 'RESIDENT_PENDING', 'User', 'user-005', 'Registration awaiting review', '2026-08-29T10:00:00Z'),
   ('audit-seed-004', 'user-admin-demo', 'RESIDENT_SUSPEND', 'User', 'user-006', 'Seeded suspended resident for lifecycle testing', '2026-08-29T10:05:00Z'),
   ('audit-seed-005', 'user-admin-demo', 'RESIDENT_ARCHIVE', 'User', 'user-007', 'Seeded archived resident for restore testing', '2026-08-29T10:10:00Z'),
-  ('audit-seed-006', 'user-admin-demo', 'MEAL_CONFIG_SEEDED', 'MealConfiguration', 'meal-breakfast', 'Breakfast, lunch and dinner configuration seeded for the meals checkpoint', '2026-08-29T10:15:00Z')
+  ('audit-seed-006', 'user-admin-demo', 'MEAL_CONFIG_SEEDED', 'MealConfiguration', 'meal-breakfast', 'Breakfast, lunch and dinner configuration seeded for the meals checkpoint', '2026-08-29T10:15:00Z'),
+  ('audit-seed-007', 'user-admin-demo', 'MEAL_OPERATIONS_SEEDED', 'System', 'phase-02-meal-operations', 'Presets and one pending leave application seeded for operational testing', '2026-08-29T10:20:00Z')
 ON CONFLICT(id) DO NOTHING;
