@@ -50,5 +50,10 @@ The deterministic seed includes:
 
 For the clearest end-to-end test, sign in as the resident and open Meals for `2026-09-02`; meal entries should materialize OFF + locked. Then sign in as administrator, open Calendar, archive Founders Day before the relevant cutoff, and verify still-editable resident choices are restored to their pre-event state.
 
+## CI verification
+Implementation commit `0951616fcd5aa3e239b03ace8ac5d277243ccc32` passed CI run `33253332771`.
+
+The run passed frozen dependency installation, TypeScript checks, unit tests (including calendar range/overlap rules), the production build, every local D1 migration including `0005_calendar_rules.sql`, Worker startup, `/health`, and `/ready`.
+
 ## Status
-CHECKPOINT IMPLEMENTED — CI verification must pass before this checkpoint is considered complete.
+CHECKPOINT COMPLETE — institution calendar/holiday management and authoritative meal-service closure rules are implemented and CI-verified. Notifications and financial calendar effects remain deliberately deferred.
