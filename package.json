@@ -1,0 +1,27 @@
+{
+  "name": "boardops",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=24.20.0 <25",
+    "pnpm": ">=11.23.0 <12"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @boardops/web --filter @boardops/api dev",
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:migrate:local": "pnpm --filter @boardops/api db:migrate:local",
+    "db:seed:local": "pnpm --filter @boardops/api db:seed:local",
+    "check": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}

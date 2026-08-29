@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.23.0 --activate
+          pnpm --version
+
+      - name: Bootstrap initial lockfile once
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && hashFiles('pnpm-lock.yaml') == ''
+        run: |
+          pnpm install --lockfile-only
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "chore: bootstrap pnpm lockfile"
+          git push
+
+      - name: Require lockfile
+        run: test -f pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Apply local D1 migrations
+        run: pnpm db:migrate:local
+
+      - name: Start local Worker
+        run: |
+          (cd services/api && pnpm exec wrangler dev --port 8787 > /tmp/boardops-worker.log 2>&1 & echo $! > /tmp/boardops-worker.pid)
+          for i in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8787/health > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/boardops-worker.log
+          exit 1
+
+      - name: Health and readiness probes
+        run: |
+          curl --fail --silent http://127.0.0.1:8787/health
+          curl --fail --silent http://127.0.0.1:8787/ready
+
+      - name: Stop local Worker
+        if: always()
+        run: |
+          if test -f /tmp/boardops-worker.pid; then kill "$(cat /tmp/boardops-worker.pid)" || true; fi

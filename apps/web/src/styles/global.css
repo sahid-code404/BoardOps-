@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #070a12;
+  color: #f8fafc;
+  --glass: rgb(15 23 42 / 0.58);
+  --glass-border: rgb(255 255 255 / 0.10);
+  --muted: #a6b0c3;
+}
+
+* { box-sizing: border-box; }
+html { background: #070a12; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select, textarea { font: inherit; }
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: clamp(24px, 5vw, 72px);
+  display: grid;
+  align-content: center;
+  gap: 22px;
+  background:
+    radial-gradient(circle at 20% 10%, rgb(99 102 241 / 0.15), transparent 34%),
+    radial-gradient(circle at 90% 70%, rgb(14 165 233 / 0.12), transparent 30%),
+    #070a12;
+}
+
+.ambient {
+  position: absolute;
+  z-index: -1;
+  width: 28rem;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  opacity: 0.38;
+  filter: blur(70px);
+  pointer-events: none;
+  animation: drift 16s ease-in-out infinite alternate;
+}
+.ambient-a { top: -12rem; left: -8rem; background: #6d28d9; }
+.ambient-b { right: -11rem; bottom: -13rem; background: #0369a1; animation-delay: -5s; }
+
+.glass-panel,
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 0.26);
+}
+
+.glass-panel {
+  max-width: 980px;
+  margin-inline: auto;
+  padding: clamp(28px, 5vw, 58px);
+  border-radius: 32px;
+  backdrop-filter: blur(20px);
+}
+
+.eyebrow { font-size: 0.74rem; letter-spacing: 0.18em; font-weight: 800; color: #c4b5fd; }
+h1 { margin: 12px 0 14px; max-width: 760px; font-size: clamp(2.3rem, 6vw, 5rem); line-height: 0.98; letter-spacing: -0.045em; }
+.hero > p { margin: 0; max-width: 720px; color: var(--muted); line-height: 1.7; }
+.status-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 24px; }
+.status-row span { border: 1px solid var(--glass-border); background: rgb(255 255 255 / 0.045); padding: 8px 11px; border-radius: 999px; font-size: 0.78rem; color: #d8deea; }
+
+.card-grid { width: min(980px, 100%); margin-inline: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.glass-card { min-height: 180px; padding: 22px; border-radius: 24px; background: rgb(15 23 42 / 0.70); }
+.glass-card h2 { margin: 20px 0 8px; font-size: 1.05rem; }
+.glass-card p { margin: 0; color: var(--muted); line-height: 1.55; font-size: 0.9rem; }
+
+@keyframes drift { to { transform: translate3d(5vw, 3vh, 0) scale(1.08); } }
+@media (max-width: 760px) { .card-grid { grid-template-columns: 1fr; } .glass-panel { backdrop-filter: blur(14px); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
