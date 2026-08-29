@@ -2,3 +2,9 @@ packages:
   - apps/*
   - services/*
   - packages/*
+
+# Explicitly reviewed native/build-script dependencies required by Vite/Workers.
+# Keep this allow-list narrow; do not globally disable pnpm build-script security.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd
