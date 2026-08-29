@@ -1,6 +1,8 @@
 # Phase 02 — Reference-parity purchases and catalog
 
-Status: IMPLEMENTED — CI REQUIRED BEFORE TEST CHECKPOINT
+Status: VERIFIED — RUNNABLE TEST CHECKPOINT
+
+Verified on implementation commit `5c421045c5f575f9c1719c5de0fcdf0a041e331a` by CI run `33258529228`.
 
 ## Reference behavior preserved
 
@@ -38,9 +40,9 @@ The rewrite keeps those user-visible capabilities. It does not introduce a draft
 
 Products and units are available from a dedicated **Products & Units** tab inside Purchases instead of requiring a separate workflow. The purchase editor keeps the reference multi-item flow while providing explicit line totals, responsive layout, safer inline correction dialogs, removed-item visibility and restore controls.
 
-## Regression contract
+## Verified regression contract
 
-CI must prove:
+CI proves:
 
 1. seeded products/units are available;
 2. a catalog product can be created;
