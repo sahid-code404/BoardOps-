@@ -2,15 +2,32 @@
 
 Production-grade rewrite of the BoardOps institutional accounting and operations platform.
 
+## Product rule: reference parity, safer implementation
+
+This rewrite is **not a redesign of BoardOps features**. The read-only reference repository `sahid-code404/BoardOpsv2rewrite`, pinned for the audit at commit `77f3dec3b264c42904207f27c5f008b33c03b868`, defines the product capabilities and workflows.
+
+The target must preserve the same meaningful features, actors, actions, statuses, review flows, history and business outcomes. Improvements should make those features more convenient, clearer, faster and safer—not replace them with different workflows.
+
+Examples:
+
+- resident-submitted payments remain resident -> pending -> admin review -> approve/reject/void; the rewrite adds safer proof storage and atomic ledger posting underneath;
+- manual bill collection/mark-paid remains available to admins, but must use the canonical ledger path underneath;
+- financial correction/delete-like capabilities remain available as user actions, but immutable posted history is corrected with void/reversal/compensating entries rather than destructive deletion;
+- billing-cycle close/rollback keeps the same product outcome while Cloudflare Workflows can replace fragile synchronous internals;
+- avatar/proof/export files keep the same product purpose while R2 replaces local filesystem storage;
+- notifications/tasks keep their visible behavior while Queues/Workflows replace request-triggered background work.
+
+No meaningful reference capability may be silently dropped or materially redesigned without explicit user approval. The detailed gate is `docs/source-audit/FEATURE-PARITY.md`.
+
 ## Current status
 
 **Phase 00 — Repository foundation: COMPLETE**  
 **Phase 01 — Source repository audit: COMPLETE**  
 **Phase 02 — Domain model + real application slices: IN PROGRESS**
 
-The temporary foundation landing page is gone. The current local checkpoint is a real BoardOps application with secure-cookie local sign-in, a D1-backed dashboard, Residents search/listing, resident 360 details, registration review, editable resident identity fields, and audited lifecycle actions.
+The temporary foundation page is gone. Current real slices include secure-cookie local sign-in, D1-backed dashboard, resident lifecycle/review, meals and meal operations, institution calendar rules, communications/notifications, and the corrected resident-submitted payment review workflow with R2 proof storage and immutable ledger posting on approval.
 
-No production deployment is authorized. Meals, financial posting, billing, payments, refunds, reporting, production authentication, and full permission-based authorization still require their dedicated migration phases.
+No production deployment is authorized. Large remaining parity areas include full authentication/verification/2FA, kitchen completion, products/units, purchases, expenses, variables/formulas, billing cycles and snapshots, bills, refunds/adjustments/restrictions, full reporting/export, audit administration, settings/policies/theme, staff, tasks and production operational flows.
 
 ## Architecture baseline
 
@@ -24,8 +41,6 @@ No production deployment is authorized. Meals, financial posting, billing, payme
 - Vitest + Playwright testing foundation
 - Integer minor units for money
 - Immutable financial history and snapshot-only historical billing as mandatory target invariants
-
-The reference repository `sahid-code404/BoardOpsv2rewrite` is read-only and the Phase 01 audit is pinned at commit `77f3dec3b264c42904207f27c5f008b33c03b868`.
 
 ## Local development
 
@@ -62,29 +77,27 @@ After pulling a checkpoint with new migrations, rerun both the migration and see
 
 ## Currently testable
 
-- responsive BoardOps app shell and navigation
+- responsive BoardOps shell and role-aware navigation
 - local sign-in/sign-out
-- admin dashboard metrics and recent audit activity from D1
-- Residents search and Active/Pending/Suspended/Archived filters
-- resident 360 side drawer
-- pending registration approve / request changes / reject workflow
-- resident profile editing for safe identity fields
-- suspend / reactivate / archive / restore lifecycle actions
-- append-only resident lifecycle history and audit updates
-- resident-role sign-in and resident profile dashboard
-- loading/error/mobile states
+- admin/resident dashboard foundation
+- Residents search, resident 360 and registration/lifecycle review actions
+- meals, presets, toggles, leave integration, guest meals and admin overrides
+- institution calendar/holiday service rules and archive restoration behavior
+- announcements, notifications and durable outbox behavior
+- resident payment submission with supporting proof, admin review, approve/reject/void and immutable resident ledger effects
+- loading/error/mobile states for implemented slices
 
-Use the deterministic seed to reset lifecycle test data after experimenting:
+Use the deterministic seed to reset local test data after experimenting:
 
 ```bash
 pnpm db:seed:local
 ```
 
-Other navigation items intentionally show their migration status instead of pretending to work.
+Unimplemented areas must show migration/incomplete status rather than pretend to be feature-complete.
 
 ## Documentation
 
-- `docs/source-audit/` — source behavior, bugs, accounting conflicts, parity and migration mapping
+- `docs/source-audit/` — source behavior, bugs, accounting conflicts, **feature-parity contract** and migration mapping
 - `docs/architecture/` — target architecture
 - `docs/decisions/` — architecture decision records
 - `docs/implementation-history/` — permanent phase-by-phase engineering history
